@@ -5,6 +5,14 @@ import Dashboard from './components/Dashboard';
 import AdminLogin from './components/AdminLogin';
 import AdminDashboard from './components/AdminDashboard';
 
+function AdminLoginWrapper() {
+  return (
+    <AuthProvider>
+      <AdminLogin />
+    </AuthProvider>
+  );
+}
+
 function CustomerRoutes() {
   const { isAuthenticated } = useAuth();
 
@@ -33,13 +41,20 @@ function AdminRoutes() {
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <Routes>
-          <Route path="/admin" element={<AdminLogin />} />
-          <Route path="/admin/dashboard" element={<AdminRoutes />} />
-          <Route path="/*" element={<CustomerRoutes />} />
-        </Routes>
-      </AuthProvider>
+      <Routes>
+        <Route path="/admin" element={<AdminLoginWrapper />} />
+        <Route
+          path="/*"
+          element={
+            <AuthProvider>
+              <Routes>
+                <Route path="/admin/dashboard" element={<AdminRoutes />} />
+                <Route path="/*" element={<CustomerRoutes />} />
+              </Routes>
+            </AuthProvider>
+          }
+        />
+      </Routes>
     </Router>
   );
 }

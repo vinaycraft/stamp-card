@@ -33,6 +33,7 @@ export const saveUser = async (user: User): Promise<void> => {
     phone: user.phone,
     unique_code: user.uniqueCode,
     role: user.role,
+    created_at: user.createdAt || new Date().toISOString(),
   };
 
   const { error } = await supabase
@@ -114,6 +115,7 @@ export const saveStampCard = async (card: StampCard): Promise<void> => {
     stamps_required: card.stampsRequired,
     current_stamps: card.currentStamps,
     status: card.status,
+    created_at: card.createdAt || new Date().toISOString(),
   };
 
   if (card.id) {

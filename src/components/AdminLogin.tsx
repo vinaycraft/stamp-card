@@ -30,13 +30,14 @@ export default function AdminLogin() {
       return;
     }
 
-    // Check if user has admin role
-    if (user?.role !== 'admin') {
-      setError('Access denied. Admin privileges required.');
-      return;
-    }
-
-    navigate('/admin/dashboard');
+    // Wait for user state to update
+    setTimeout(() => {
+      if (user?.role !== 'admin') {
+        setError('Access denied. Admin privileges required.');
+        return;
+      }
+      navigate('/admin/dashboard');
+    }, 100);
   };
 
   return (
