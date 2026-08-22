@@ -6,6 +6,7 @@ export interface User {
   role: 'customer' | 'admin';
   uniqueCode: string; // Unique QR code for customer
   createdAt: string;
+  biometricCredentialId?: string; // For biometric authentication
 }
 
 export interface StampCard {

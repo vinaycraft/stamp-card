@@ -33,7 +33,7 @@ export const saveUser = async (user: User): Promise<void> => {
     phone: user.phone,
     unique_code: user.uniqueCode,
     role: user.role,
-    created_at: user.createdAt || new Date().toISOString(),
+    created_at: user.createdAt,
   };
 
   const { error } = await supabase
@@ -42,6 +42,18 @@ export const saveUser = async (user: User): Promise<void> => {
   
   if (error) {
     console.error('Error saving user:', error);
+  }
+};
+
+export const updateUserBiometricCredential = async (userId: string, credentialId: string): Promise<void> => {
+  const { error } = await supabase
+    .from('user_profiles')
+    .update({ biometric_credential_id: credentialId })
+    .eq('id', userId);
+  
+  if (error) {
+    console.error('Error updating biometric credential:', error);
+    throw error;
   }
 };
 
@@ -62,6 +74,7 @@ export const getUserByEmail = async (email: string): Promise<User | undefined> =
     role: data.role || 'customer',
     uniqueCode: data.unique_code,
     createdAt: data.created_at,
+    biometricCredentialId: data.biometric_credential_id,
   };
 };
 

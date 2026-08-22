@@ -3,13 +3,16 @@ import { useAuth } from '../contexts/AuthContext';
 import { getUserStampCards, saveStampCard, generateId, getCafeSettings } from '../lib/storage';
 import type { StampCard as StampCardType } from '../types';
 import StampCard from './StampCard';
-import { Coffee, QrCode } from 'lucide-react';
+import { Coffee, QrCode, Fingerprint } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import BiometricRegistration from './BiometricRegistration';
+import { isWebAuthnSupported } from '../lib/webauthn';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const [cards, setCards] = useState<StampCardType[]>([]);
   const [showQRDropdown, setShowQRDropdown] = useState(false);
+  const [showBiometricRegistration, setShowBiometricRegistration] = useState(false);
   const cafeSettings = getCafeSettings();
 
   const hasActiveCard = cards.some(card => card.status === 'active' || card.status === 'completed');
@@ -76,6 +79,15 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
+              {isWebAuthnSupported() && !user?.biometricCredentialId && (
+                <button
+                  onClick={() => setShowBiometricRegistration(true)}
+                  className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-amber-50 bg-amber-700/50 hover:bg-amber-700 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <Fingerprint className="w-4 h-4" />
+                  <span className="hidden sm:inline">Enable Biometric</span>
+                </button>
+              )}
               <button
                 onClick={() => setShowQRDropdown(true)}
                 className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-amber-50 bg-amber-800/50 hover:bg-amber-800 rounded-lg transition-colors flex items-center gap-2"
@@ -131,6 +143,18 @@ export default function Dashboard() {
         )}
       </main>
 
+      {/* Biometric Registration Modal */}
+      {showBiometricRegistration && user && (
+        <BiometricRegistration
+          userId={user.id}
+          userEmail={user.email}
+          onSuccess={() => {
+            setShowBiometricRegistration(false);
+            loadCards();
+          }}
+          onClose={() => setShowBiometricRegistration(false)}
+        />
+      )}
       {/* QR Modal */}
       {showQRDropdown && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50" onClick={() => setShowQRDropdown(false)}>
