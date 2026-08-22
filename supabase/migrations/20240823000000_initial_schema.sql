@@ -1,10 +1,10 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Create users table (extends Supabase auth.users with custom fields)
+-- Create users table (independent of Supabase Auth)
 CREATE TABLE IF NOT EXISTS public.user_profiles (
-  id UUID REFERENCES auth.users(id) PRIMARY KEY,
-  email TEXT,
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
   name TEXT,
   phone TEXT,
   unique_code TEXT UNIQUE NOT NULL,
