@@ -1,66 +1,46 @@
 import type { User, StampCard, Stamp, CafeSettings } from '../types';
 import { supabase } from './supabase';
 
-// User operations
-export const getUsers = async (): Promise<User[]> => {
-  const { data, error } = await supabase
-    .from('user_profiles')
-    .select('*');
-  
-  if (error || !data) return [];
-  
-  return data.map(profile => ({
-    id: profile.id,
-    name: profile.name || 'User',
-    email: profile.email || '',
-    phone: profile.phone || '',
-    role: profile.role || 'customer',
-    uniqueCode: profile.unique_code,
-    createdAt: profile.created_at,
-  }));
+const STORAGE_KEYS = {
+  USERS: 'stampcard_users',
+  CARDS: 'stampcard_cards',
+  STAMPS: 'stampcard_stamps',
+  SETTINGS: 'stampcard_settings',
+  CURRENT_USER: 'stampcard_current_user',
+};
+
+// User operations (localStorage)
+export const getUsers = (): User[] => {
+  const data = localStorage.getItem(STORAGE_KEYS.USERS);
+  return data ? JSON.parse(data) : [];
+};
+
+export const getUsersAsync = async (): Promise<User[]> => {
+  return getUsers();
+};
+
+export const saveUser = (user: User): void => {
+  const users = getUsers();
+  const existingIndex = users.findIndex(u => u.id === user.id);
+  if (existingIndex >= 0) {
+    users[existingIndex] = user;
+  } else {
+    users.push(user);
+  }
+  localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
 };
 
 export const getUserByEmail = async (email: string): Promise<User | undefined> => {
-  const { data, error } = await supabase
-    .from('user_profiles')
-    .select('*')
-    .eq('email', email)
-    .single();
-  
-  if (error || !data) return undefined;
-  
-  return {
-    id: data.id,
-    name: data.name || 'User',
-    email: data.email || '',
-    phone: data.phone || '',
-    role: data.role || 'customer',
-    uniqueCode: data.unique_code,
-    createdAt: data.created_at,
-  };
+  const users = getUsers();
+  return users.find(u => u.email === email);
 };
 
 export const getUserByUniqueCode = async (uniqueCode: string): Promise<User | undefined> => {
-  const { data, error } = await supabase
-    .from('user_profiles')
-    .select('*')
-    .eq('unique_code', uniqueCode)
-    .single();
-  
-  if (error || !data) return undefined;
-  
-  return {
-    id: data.id,
-    name: data.name || 'User',
-    email: data.email || '',
-    phone: data.phone || '',
-    role: data.role || 'customer',
-    uniqueCode: data.unique_code,
-    createdAt: data.created_at,
-  };
+  const users = getUsers();
+  return users.find(u => u.uniqueCode === uniqueCode);
 };
 
-// Stamp card operations
+// Stamp card operations (Supabase)
 export const getUserStampCards = async (userId: string): Promise<StampCard[]> => {
   const { data, error } = await supabase
     .from('stamp_cards')
@@ -125,7 +105,7 @@ export const getStampCard = async (cardId: string): Promise<StampCard | undefine
   };
 };
 
-// Stamp operations
+// Stamp operations (Supabase)
 export const addStamp = async (cardId: string): Promise<void> => {
   const stampCode = generateStampCode();
   
@@ -172,39 +152,24 @@ export const getCardStamps = async (cardId: string): Promise<Stamp[]> => {
   }));
 };
 
-// Cafe settings
-export const getCafeSettings = async (): Promise<CafeSettings> => {
-  const { data, error } = await supabase
-    .from('cafe_settings')
-    .select('*')
-    .single();
-  
-  if (error || !data) {
-    // Default settings
-    return {
-      id: 'default',
-      cafeName: 'My Cafe',
-      stampsRequired: 10,
-      rewardDescription: 'Free coffee',
-    };
+// Cafe settings (localStorage for simplicity)
+export const getCafeSettings = (): CafeSettings => {
+  const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+  if (data) {
+    return JSON.parse(data);
   }
-  
-  return {
-    id: data.id,
-    cafeName: data.cafe_name,
-    stampsRequired: data.stamps_per_card,
+  const defaultSettings: CafeSettings = {
+    id: 'default',
+    cafeName: 'My Cafe',
+    stampsRequired: 10,
     rewardDescription: 'Free coffee',
   };
+  localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(defaultSettings));
+  return defaultSettings;
 };
 
-export const saveCafeSettings = async (settings: CafeSettings): Promise<void> => {
-  await supabase
-    .from('cafe_settings')
-    .update({
-      cafe_name: settings.cafeName,
-      stamps_per_card: settings.stampsRequired,
-    })
-    .eq('id', settings.id);
+export const saveCafeSettings = (settings: CafeSettings): void => {
+  localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
 };
 
 // Utility functions

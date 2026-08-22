@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUserByUniqueCode, getUserStampCards, saveStampCard, addStamp, getUsers } from '../lib/storage';
-import { supabase } from '../lib/supabase';
+import { getUserByUniqueCode, getUserStampCards, saveStampCard, addStamp, getUsersAsync } from '../lib/storage';
+import { useAuth } from '../contexts/AuthContext';
 import type { User, StampCard as StampCardType } from '../types';
 import { Shield, Search, Coffee, Plus, QrCode, Users, LogOut } from 'lucide-react';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [searchCode, setSearchCode] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userCards, setUserCards] = useState<StampCardType[]>([]);
@@ -56,13 +57,13 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = () => {
+    logout();
     navigate('/admin');
   };
 
   const handleViewAllCustomers = async () => {
-    const allUsers = await getUsers();
+    const allUsers = await getUsersAsync();
     const customers = allUsers.filter(u => u.role === 'customer');
     setAllCustomers(customers);
     setShowAllCustomers(true);

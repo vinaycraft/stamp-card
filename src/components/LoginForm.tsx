@@ -25,13 +25,9 @@ export default function LoginForm() {
         setError('Invalid email or password');
       }
     } else {
-      try {
-        const success = await register(formData.name, formData.email, formData.phone, formData.password);
-        if (!success) {
-          setError('Registration failed. Please try again.');
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
+      const success = await register(formData.name, formData.email, formData.phone, formData.password);
+      if (!success) {
+        setError('Email already registered');
       }
     }
   };

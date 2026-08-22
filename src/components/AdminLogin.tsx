@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -12,44 +11,32 @@ export default function AdminLogin() {
     password: '',
   });
   const [error, setError] = useState('');
-  const [isCheckingRole, setIsCheckingRole] = useState(false);
 
   useEffect(() => {
     // If user is logged in and has admin role, navigate to dashboard
-    if (user && user.role === 'admin' && !isCheckingRole) {
+    if (user && user.role === 'admin') {
       navigate('/admin/dashboard');
     }
-  }, [user, navigate, isCheckingRole]);
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setIsCheckingRole(true);
 
     const success = await login(formData.email, formData.password);
     
     if (!success) {
       setError('Invalid admin credentials');
-      setIsCheckingRole(false);
       return;
     }
 
-    // Check if user has admin role from database directly
-    const { data: authUser } = await supabase.auth.getUser();
-    if (authUser.user) {
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('role')
-        .eq('id', authUser.user.id)
-        .single();
-
-      if (profile?.role !== 'admin') {
-        await supabase.auth.signOut();
-        setError('Access denied. Admin privileges required.');
-        setIsCheckingRole(false);
-        return;
-      }
+    // Check if user has admin role
+    if (user?.role !== 'admin') {
+      setError('Access denied. Admin privileges required.');
+      return;
     }
+
+    navigate('/admin/dashboard');
   };
 
   return (

@@ -10,7 +10,7 @@ export default function Dashboard() {
   const { user, logout } = useAuth();
   const [cards, setCards] = useState<StampCardType[]>([]);
   const [showQRDropdown, setShowQRDropdown] = useState(false);
-  const [cafeSettings, setCafeSettings] = useState({ cafeName: 'My Cafe', stampsRequired: 10, rewardDescription: 'Free coffee' });
+  const cafeSettings = getCafeSettings();
 
   // Check if user has an active card (not completed or redeemed)
   const hasActiveCard = cards.some(card => card.status === 'active' || card.status === 'completed');
@@ -18,7 +18,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (user) {
       loadCards();
-      loadCafeSettings();
     }
   }, [user]);
 
@@ -27,11 +26,6 @@ export default function Dashboard() {
       const userCards = await getUserStampCards(user.id);
       setCards(userCards);
     }
-  };
-
-  const loadCafeSettings = async () => {
-    const settings = await getCafeSettings();
-    setCafeSettings(settings);
   };
 
   const handleRedeem = async (cardId: string) => {
@@ -63,8 +57,8 @@ export default function Dashboard() {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
+  const handleLogout = () => {
+    logout();
   };
 
   return (
