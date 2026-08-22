@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { QrReader } from 'react-qr-reader';
+import { useState, useEffect, useRef } from 'react';
+import { Html5Qrcode } from 'html5-qrcode';
 import { X, Camera } from 'lucide-react';
 
 interface QRScannerProps {
@@ -9,17 +9,40 @@ interface QRScannerProps {
 
 export default function QRScanner({ onScan, onClose }: QRScannerProps) {
   const [error, setError] = useState<string | null>(null);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerElementId = 'qr-scanner-element';
 
-  const handleScan = (result: string | null) => {
-    if (result) {
-      onScan(result);
-    }
-  };
+  useEffect(() => {
+    const scanner = new Html5Qrcode(scannerElementId);
+    scannerRef.current = scanner;
 
-  const handleError = (err: any) => {
-    console.error('QR Scanner error:', err);
-    setError('Camera access denied or not available');
-  };
+    const config = {
+      fps: 10,
+      qrbox: { width: 250, height: 250 },
+      aspectRatio: 1.0,
+    };
+
+    scanner.start(
+      { facingMode: 'environment' },
+      config,
+      (decodedText) => {
+        onScan(decodedText);
+        scanner.stop();
+      },
+      () => {
+        // Ignore scan errors, they're normal during scanning
+      }
+    ).catch((err) => {
+      console.error('Scanner error:', err);
+      setError('Camera access denied or not available');
+    });
+
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(console.error);
+      }
+    };
+  }, [onScan]);
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
@@ -38,21 +61,7 @@ export default function QRScanner({ onScan, onClose }: QRScannerProps) {
         </div>
 
         <div className="bg-amber-50 rounded-xl overflow-hidden mb-4">
-          <QrReader
-            onResult={(result, error) => {
-              if (result) {
-                handleScan(result?.text || null);
-              }
-              if (error) {
-                handleError(error);
-              }
-            }}
-            constraints={{
-              facingMode: 'environment',
-            }}
-            videoStyle={{ width: '100%', height: '100%' }}
-            videoContainerStyle={{ width: '100%', height: '300px' }}
-          />
+          <div id={scannerElementId} className="w-full h-[300px]" />
         </div>
 
         {error && (
