@@ -25,9 +25,13 @@ export default function LoginForm() {
         setError('Invalid email or password');
       }
     } else {
-      const success = await register(formData.name, formData.email, formData.phone, formData.password);
-      if (!success) {
-        setError('Email already registered');
+      try {
+        const success = await register(formData.name, formData.email, formData.phone, formData.password);
+        if (!success) {
+          setError('Registration failed. Please try again.');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
       }
     }
   };
@@ -128,7 +132,7 @@ export default function LoginForm() {
               onClick={() => navigate('/admin')}
               className="text-xs text-amber-500 hover:text-amber-900 transition-colors"
             >
-              Admin access
+              Admin Login
             </button>
           </div>
         </div>

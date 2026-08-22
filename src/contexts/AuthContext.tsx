@@ -49,7 +49,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .eq('id', userId)
       .single();
 
-    if (data && !error) {
+    if (error) {
+      console.error('Profile fetch error:', error);
+      // If profile doesn't exist, create it
+      if (error.code === 'PGRST116') {
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData.user) {
+          const { error: insertError } = await supabase
+            .from('user_profiles')
+            .insert({
+              id: userId,
+              email: userData.user.email,
+              name: userData.user.user_metadata?.name || 'User',
+              phone: userData.user.user_metadata?.phone || '',
+              unique_code: 'USR-' + Math.random().toString(36).substr(2, 8).toUpperCase(),
+              role: userData.user.user_metadata?.role || 'customer',
+            });
+          
+          if (!insertError) {
+            // Retry fetch after insert
+            return fetchUserProfile(userId);
+          }
+        }
+      }
+      return;
+    }
+
+    if (data) {
       setUser({
         id: data.id,
         name: data.name || 'User',
@@ -97,10 +123,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (error) {
       console.error('Registration error:', error.message);
-      return false;
+      throw new Error(error.message);
     }
 
     if (data.user) {
+      // Wait a bit for the trigger to create the profile
+      await new Promise(resolve => setTimeout(resolve, 500));
       await fetchUserProfile(data.user.id);
       return true;
     }
