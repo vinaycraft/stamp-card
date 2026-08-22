@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -14,24 +15,31 @@ export default function AdminLogin() {
     e.preventDefault();
     setError('');
 
-    // Hardcoded admin credentials for demo
-    if (formData.email === 'admin@cafe.com' && formData.password === 'admin123') {
-      // Create admin user on the fly for demo
-      const adminUser = {
-        id: 'admin',
-        name: 'Cafe Admin',
-        email: 'admin@cafe.com',
-        phone: 'admin123',
-        role: 'admin' as const,
-        uniqueCode: 'admin-qr',
-        createdAt: new Date().toISOString(),
-      };
-      
-      // Save admin user if not exists
-      localStorage.setItem('stampcard_current_user', JSON.stringify(adminUser));
-      navigate('/');
-    } else {
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
+      email: formData.email,
+      password: formData.password,
+    });
+
+    if (authError) {
       setError('Invalid admin credentials');
+      return;
+    }
+
+    if (data.user) {
+      // Check if user has admin role
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profileError || profile?.role !== 'admin') {
+        await supabase.auth.signOut();
+        setError('Access denied. Admin privileges required.');
+        return;
+      }
+
+      navigate('/admin/dashboard');
     }
   };
 

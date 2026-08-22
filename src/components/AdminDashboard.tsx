@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUserByUniqueCode, getUserStampCards, saveStampCard, generateId, saveStamp, generateStampCode, getUsers } from '../lib/storage';
+import { getUserByUniqueCode, getUserStampCards, saveStampCard, addStamp, getUsers } from '../lib/storage';
+import { supabase } from '../lib/supabase';
 import type { User, StampCard as StampCardType } from '../types';
 import { Shield, Search, Coffee, Plus, QrCode, Users, LogOut } from 'lucide-react';
 
@@ -13,18 +14,19 @@ export default function AdminDashboard() {
   const [showAllCustomers, setShowAllCustomers] = useState(false);
   const [allCustomers, setAllCustomers] = useState<User[]>([]);
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     setError('');
     if (!searchCode.trim()) {
       setError('Please enter a customer code');
       return;
     }
 
-    const user = getUserByUniqueCode(searchCode.trim());
+    const user = await getUserByUniqueCode(searchCode.trim());
     
     if (user) {
       setSelectedUser(user);
-      setUserCards(getUserStampCards(user.id));
+      const cards = await getUserStampCards(user.id);
+      setUserCards(cards);
     } else {
       setError('Customer not found. Make sure the customer has registered and has a valid unique code.');
       setSelectedUser(null);
@@ -32,46 +34,35 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleAddStamp = (cardId: string) => {
+  const handleAddStamp = async (cardId: string) => {
     const card = userCards.find(c => c.id === cardId);
     if (card && card.currentStamps < card.stampsRequired) {
-      const updatedCard: StampCardType = {
-        ...card,
-        currentStamps: card.currentStamps + 1,
-        status: card.currentStamps + 1 >= card.stampsRequired ? 'completed' : 'active',
-      };
-      saveStampCard(updatedCard);
-      
-      saveStamp({
-        id: generateId(),
-        cardId,
-        stampDate: new Date().toISOString(),
-        stampCode: generateStampCode(),
-      });
-      
-      setUserCards(getUserStampCards(selectedUser!.id));
+      await addStamp(cardId);
+      const cards = await getUserStampCards(selectedUser!.id);
+      setUserCards(cards);
     }
   };
 
-  const handleRedeem = (cardId: string) => {
+  const handleRedeem = async (cardId: string) => {
     const card = userCards.find(c => c.id === cardId);
     if (card) {
       const updatedCard: StampCardType = {
         ...card,
         status: 'redeemed' as const,
       };
-      saveStampCard(updatedCard);
-      setUserCards(getUserStampCards(selectedUser!.id));
+      await saveStampCard(updatedCard);
+      const cards = await getUserStampCards(selectedUser!.id);
+      setUserCards(cards);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('stampcard_current_user');
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     navigate('/admin');
   };
 
-  const handleViewAllCustomers = () => {
-    const allUsers = getUsers();
+  const handleViewAllCustomers = async () => {
+    const allUsers = await getUsers();
     const customers = allUsers.filter(u => u.role === 'customer');
     setAllCustomers(customers);
     setShowAllCustomers(true);

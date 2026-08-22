@@ -7,14 +7,13 @@ import AdminLogin from './components/AdminLogin';
 import AdminDashboard from './components/AdminDashboard';
 
 function AppContent() {
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const currentUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('stampcard_current_user') || 'null') : null;
 
   // Check if user is admin
-  const isAdmin = currentUser?.role === 'admin';
+  const isAdmin = user?.role === 'admin';
 
-  if (!isAuthenticated && !isAdmin) {
+  if (!isAuthenticated) {
     return (
       <div>
         <LoginForm />

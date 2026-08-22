@@ -10,7 +10,7 @@ export default function Dashboard() {
   const { user, logout } = useAuth();
   const [cards, setCards] = useState<StampCardType[]>([]);
   const [showQRDropdown, setShowQRDropdown] = useState(false);
-  const cafeSettings = getCafeSettings();
+  const [cafeSettings, setCafeSettings] = useState({ cafeName: 'My Cafe', stampsRequired: 10, rewardDescription: 'Free coffee' });
 
   // Check if user has an active card (not completed or redeemed)
   const hasActiveCard = cards.some(card => card.status === 'active' || card.status === 'completed');
@@ -18,29 +18,35 @@ export default function Dashboard() {
   useEffect(() => {
     if (user) {
       loadCards();
+      loadCafeSettings();
     }
   }, [user]);
 
-  const loadCards = () => {
+  const loadCards = async () => {
     if (user) {
-      const userCards = getUserStampCards(user.id);
+      const userCards = await getUserStampCards(user.id);
       setCards(userCards);
     }
   };
 
-  const handleRedeem = (cardId: string) => {
+  const loadCafeSettings = async () => {
+    const settings = await getCafeSettings();
+    setCafeSettings(settings);
+  };
+
+  const handleRedeem = async (cardId: string) => {
     const card = cards.find(c => c.id === cardId);
     if (card && card.currentStamps >= card.stampsRequired) {
       const updatedCard = {
         ...card,
         status: 'redeemed' as const,
       };
-      saveStampCard(updatedCard);
-      loadCards();
+      await saveStampCard(updatedCard);
+      await loadCards();
     }
   };
 
-  const handleCreateCard = () => {
+  const handleCreateCard = async () => {
     if (user) {
       const newCard: StampCardType = {
         id: generateId(),
@@ -52,9 +58,13 @@ export default function Dashboard() {
         createdAt: new Date().toISOString(),
         status: 'active',
       };
-      saveStampCard(newCard);
-      loadCards();
+      await saveStampCard(newCard);
+      await loadCards();
     }
+  };
+
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (
@@ -88,7 +98,7 @@ export default function Dashboard() {
                 New Card
               </button>
               <button
-                onClick={logout}
+                onClick={handleLogout}
                 className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-amber-50 bg-amber-800/50 hover:bg-amber-800 rounded-lg transition-colors"
               >
                 Sign Out
