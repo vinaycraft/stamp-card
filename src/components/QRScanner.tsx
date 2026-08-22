@@ -11,12 +11,14 @@ export default function QRScanner({ onScan, onClose }: QRScannerProps) {
   const [error, setError] = useState<string | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isScanningRef = useRef(false);
+  const hasScannedRef = useRef(false);
   const scannerElementId = 'qr-scanner-element';
 
   useEffect(() => {
     const scanner = new Html5Qrcode(scannerElementId);
     scannerRef.current = scanner;
     isScanningRef.current = true;
+    hasScannedRef.current = false;
 
     const config = {
       fps: 10,
@@ -28,10 +30,16 @@ export default function QRScanner({ onScan, onClose }: QRScannerProps) {
       { facingMode: 'environment' },
       config,
       (decodedText) => {
+        if (hasScannedRef.current) return;
+        
         console.log('QR Code detected:', decodedText);
+        hasScannedRef.current = true;
         isScanningRef.current = false;
+        
         onScan(decodedText);
-        // Don't stop here, let the parent handle cleanup
+        
+        // Stop the scanner immediately after successful scan
+        scanner.stop().catch(console.error);
       },
       () => {
         // Ignore scan errors, they're normal during scanning
