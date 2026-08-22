@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Stamp Card Data</title>
+</head>
+<body>
+    <h1>Clear Stamp Card Data</h1>
+    <button onclick="clearData()">Clear All Data</button>
+    <div id="result"></div>
+    
+    <script>
+        function clearData() {
+            const keys = [
+                'stampcard_users',
+                'stampcard_cards',
+                'stampcard_stamps',
+                'stampcard_settings',
+                'stampcard_current_user'
+            ];
+            
+            keys.forEach(key => {
+                localStorage.removeItem(key);
+            });
+            
+            document.getElementById('result').innerHTML = '<p>All data cleared! Close this tab and refresh your app.</p>';
+        }
+    </script>
+</body>
+</html>
