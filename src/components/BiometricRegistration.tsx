@@ -34,6 +34,8 @@ export default function BiometricRegistration({
       
       if (credentialId) {
         await updateUserBiometricCredential(userId, credentialId);
+        // Store credential ID in localStorage for future logins
+        localStorage.setItem('biometric_credential_id', credentialId);
         setSuccess(true);
         setTimeout(() => {
           onSuccess();

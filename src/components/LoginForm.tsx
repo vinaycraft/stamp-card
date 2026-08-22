@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Coffee, Fingerprint } from 'lucide-react';
@@ -16,8 +16,15 @@ export default function LoginForm() {
   });
   const [error, setError] = useState('');
   const [isBiometricAuthenticating, setIsBiometricAuthenticating] = useState(false);
-  const [showEmailFallback, setShowEmailFallback] = useState(false);
-  const [fallbackEmail, setFallbackEmail] = useState('');
+  const [storedCredentialId, setStoredCredentialId] = useState<string | null>(null);
+
+  // Load stored credential ID on mount
+  useEffect(() => {
+    const storedId = localStorage.getItem('biometric_credential_id');
+    if (storedId) {
+      setStoredCredentialId(storedId);
+    }
+  }, []);
 
   const handleBiometricLogin = async (specificCredentialId?: string) => {
     setIsBiometricAuthenticating(true);
@@ -37,8 +44,8 @@ export default function LoginForm() {
         return;
       }
 
-      // Store credential ID for future use
-      localStorage.setItem('last_biometric_credential_id', credentialId);
+      // Update stored credential ID
+      localStorage.setItem('biometric_credential_id', credentialId);
 
       // Log the user in
       const loginSuccess = await login(user.email, user.phone);
@@ -49,44 +56,8 @@ export default function LoginForm() {
       }
     } catch (err: any) {
       console.error('Biometric login error:', err);
-      
-      // If error is about no passkey available, show email fallback
-      if (err.message?.includes('no passkey') || err.name === 'NotAllowedError') {
-        setShowEmailFallback(true);
-        setError('No passkey found. Please enter your email to use your registered biometric credential.');
-      } else {
-        setError('Biometric authentication failed. Please try again or use password login.');
-      }
+      setError('Biometric authentication failed. Please try again or use password login.');
     } finally {
-      setIsBiometricAuthenticating(false);
-    }
-  };
-
-  const handleEmailFallbackLogin = async () => {
-    if (!fallbackEmail.trim()) {
-      setError('Please enter your email');
-      return;
-    }
-
-    setIsBiometricAuthenticating(true);
-    setError('');
-
-    try {
-      // Get user by email to find their credential ID
-      const { getUserByEmail } = await import('../lib/storage');
-      const user = await getUserByEmail(fallbackEmail.trim());
-      
-      if (!user || !user.biometricCredentialId) {
-        setError('No biometric credentials found for this email. Please enable biometric login first.');
-        setIsBiometricAuthenticating(false);
-        return;
-      }
-
-      // Authenticate with specific credential ID
-      await handleBiometricLogin(user.biometricCredentialId);
-    } catch (err) {
-      console.error('Email fallback error:', err);
-      setError('Failed to authenticate. Please try password login.');
       setIsBiometricAuthenticating(false);
     }
   };
@@ -198,53 +169,24 @@ export default function LoginForm() {
           )}
 
           {isLogin && isWebAuthnSupported() && (
-            <>
-              <button
-                type="button"
-                onClick={() => handleBiometricLogin()}
-                disabled={isBiometricAuthenticating}
-                className="w-full bg-gradient-to-r from-amber-700 to-amber-800 text-white py-3 sm:py-3.5 rounded-xl hover:from-amber-600 hover:to-amber-700 transition-all text-sm sm:text-base font-semibold shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isBiometricAuthenticating ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Authenticating...
-                  </>
-                ) : (
-                  <>
-                    <Fingerprint className="w-5 h-5" />
-                    Biometric Login
-                  </>
-                )}
-              </button>
-
-              {showEmailFallback && (
-                <div className="mt-4 space-y-3">
-                  <input
-                    type="email"
-                    value={fallbackEmail}
-                    onChange={(e) => setFallbackEmail(e.target.value)}
-                    className="w-full px-0 py-2 sm:py-3 border-0 border-b border-amber-200 focus:border-amber-800 focus:ring-0 bg-transparent text-amber-900 placeholder-amber-400 transition-colors text-base"
-                    placeholder="Enter your email"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleEmailFallbackLogin}
-                    disabled={isBiometricAuthenticating}
-                    className="w-full bg-gradient-to-r from-amber-600 to-amber-700 text-white py-3 sm:py-3.5 rounded-xl hover:from-amber-500 hover:to-amber-600 transition-all text-sm sm:text-base font-semibold shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isBiometricAuthenticating ? (
-                      <>
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Authenticating...
-                      </>
-                    ) : (
-                      'Use Email for Biometric'
-                    )}
-                  </button>
-                </div>
+            <button
+              type="button"
+              onClick={() => handleBiometricLogin(storedCredentialId || undefined)}
+              disabled={isBiometricAuthenticating}
+              className="w-full bg-gradient-to-r from-amber-700 to-amber-800 text-white py-3 sm:py-3.5 rounded-xl hover:from-amber-600 hover:to-amber-700 transition-all text-sm sm:text-base font-semibold shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isBiometricAuthenticating ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Authenticating...
+                </>
+              ) : (
+                <>
+                  <Fingerprint className="w-5 h-5" />
+                  Biometric Login
+                </>
               )}
-            </>
+            </button>
           )}
         </form>
 
