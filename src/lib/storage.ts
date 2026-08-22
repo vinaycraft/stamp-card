@@ -50,7 +50,7 @@ export const getUserByEmail = async (email: string): Promise<User | undefined> =
     .from('user_profiles')
     .select('*')
     .eq('email', email)
-    .single();
+    .maybeSingle();
   
   if (error || !data) return undefined;
   
@@ -70,7 +70,7 @@ export const getUserByUniqueCode = async (uniqueCode: string): Promise<User | un
     .from('user_profiles')
     .select('*')
     .eq('unique_code', uniqueCode)
-    .single();
+    .maybeSingle();
   
   if (error || !data) return undefined;
   
