@@ -109,6 +109,7 @@ export const getUserStampCards = async (userId: string): Promise<StampCard[]> =>
 
 export const saveStampCard = async (card: StampCard): Promise<void> => {
   const cardData = {
+    id: card.id,
     user_id: card.userId,
     cafe_name: card.cafeName,
     reward_description: card.rewardDescription,
@@ -118,15 +119,12 @@ export const saveStampCard = async (card: StampCard): Promise<void> => {
     created_at: card.createdAt || new Date().toISOString(),
   };
 
-  if (card.id) {
-    await supabase
-      .from('stamp_cards')
-      .update(cardData)
-      .eq('id', card.id);
-  } else {
-    await supabase
-      .from('stamp_cards')
-      .insert(cardData);
+  const { error } = await supabase
+    .from('stamp_cards')
+    .upsert(cardData, { onConflict: 'id' });
+  
+  if (error) {
+    console.error('Error saving stamp card:', error);
   }
 };
 
