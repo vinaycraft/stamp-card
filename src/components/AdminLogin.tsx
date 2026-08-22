@@ -13,7 +13,6 @@ export default function AdminLogin() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // If user is logged in and has admin role, navigate to dashboard
     if (user && user.role === 'admin') {
       navigate('/admin/dashboard');
     }
@@ -30,14 +29,7 @@ export default function AdminLogin() {
       return;
     }
 
-    // Wait for user state to update
-    setTimeout(() => {
-      if (user?.role !== 'admin') {
-        setError('Access denied. Admin privileges required.');
-        return;
-      }
-      navigate('/admin/dashboard');
-    }, 100);
+    navigate('/admin/dashboard');
   };
 
   return (

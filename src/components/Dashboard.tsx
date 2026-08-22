@@ -12,7 +12,6 @@ export default function Dashboard() {
   const [showQRDropdown, setShowQRDropdown] = useState(false);
   const cafeSettings = getCafeSettings();
 
-  // Check if user has an active card (not completed or redeemed)
   const hasActiveCard = cards.some(card => card.status === 'active' || card.status === 'completed');
 
   useEffect(() => {
@@ -125,7 +124,6 @@ export default function Dashboard() {
                 key={card.id}
                 card={card}
                 onRedeem={() => handleRedeem(card.id)}
-                showQR={false}
                 customerView={true}
               />
             ))}

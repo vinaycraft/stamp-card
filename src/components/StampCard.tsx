@@ -1,15 +1,14 @@
 import type { StampCard as StampCardType } from '../types';
-import { Coffee, QrCode } from 'lucide-react';
+import { Coffee } from 'lucide-react';
 
 interface StampCardProps {
   card: StampCardType;
   onAddStamp?: () => void;
   onRedeem?: () => void;
-  showQR?: boolean;
   customerView?: boolean;
 }
 
-export default function StampCard({ card, onAddStamp, onRedeem, showQR = false, customerView = false }: StampCardProps) {
+export default function StampCard({ card, onAddStamp, onRedeem, customerView = false }: StampCardProps) {
   const progress = (card.currentStamps / card.stampsRequired) * 100;
   const isCompleted = card.currentStamps >= card.stampsRequired;
 
@@ -17,14 +16,9 @@ export default function StampCard({ card, onAddStamp, onRedeem, showQR = false, 
     <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-amber-100 overflow-hidden hover:shadow-xl transition-shadow">
       {/* Card Header */}
       <div className="bg-gradient-to-r from-amber-800 to-amber-900 p-4 sm:p-6 text-white">
-        <div className="flex items-center justify-between mb-2 sm:mb-3">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Coffee className="w-5 h-5 sm:w-6 sm:h-6" />
-            <h3 className="text-base sm:text-lg font-semibold">{card.cafeName}</h3>
-          </div>
-          {showQR && (
-            <QrCode className="w-4 h-4 sm:w-5 sm:h-5 text-white/80" />
-          )}
+        <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+          <Coffee className="w-5 h-5 sm:w-6 sm:h-6" />
+          <h3 className="text-base sm:text-lg font-semibold">{card.cafeName}</h3>
         </div>
         <p className="text-amber-100 text-xs sm:text-sm">{card.rewardDescription}</p>
       </div>
