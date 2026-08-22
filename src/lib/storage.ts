@@ -2,42 +2,86 @@ import type { User, StampCard, Stamp, CafeSettings } from '../types';
 import { supabase } from './supabase';
 
 const STORAGE_KEYS = {
-  USERS: 'stampcard_users',
-  CARDS: 'stampcard_cards',
-  STAMPS: 'stampcard_stamps',
-  SETTINGS: 'stampcard_settings',
   CURRENT_USER: 'stampcard_current_user',
+  SETTINGS: 'stampcard_settings',
 };
 
-// User operations (localStorage)
-export const getUsers = (): User[] => {
-  const data = localStorage.getItem(STORAGE_KEYS.USERS);
-  return data ? JSON.parse(data) : [];
+// User operations (Supabase - no Supabase Auth)
+export const getUsers = async (): Promise<User[]> => {
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('*');
+  
+  if (error || !data) return [];
+  
+  return data.map(profile => ({
+    id: profile.id,
+    name: profile.name || 'User',
+    email: profile.email || '',
+    phone: profile.phone || '',
+    role: profile.role || 'customer',
+    uniqueCode: profile.unique_code,
+    createdAt: profile.created_at,
+  }));
 };
 
-export const getUsersAsync = async (): Promise<User[]> => {
-  return getUsers();
-};
+export const saveUser = async (user: User): Promise<void> => {
+  const userData = {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    phone: user.phone,
+    unique_code: user.uniqueCode,
+    role: user.role,
+  };
 
-export const saveUser = (user: User): void => {
-  const users = getUsers();
-  const existingIndex = users.findIndex(u => u.id === user.id);
-  if (existingIndex >= 0) {
-    users[existingIndex] = user;
-  } else {
-    users.push(user);
+  const { error } = await supabase
+    .from('user_profiles')
+    .upsert(userData, { onConflict: 'id' });
+  
+  if (error) {
+    console.error('Error saving user:', error);
   }
-  localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
 };
 
 export const getUserByEmail = async (email: string): Promise<User | undefined> => {
-  const users = getUsers();
-  return users.find(u => u.email === email);
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('*')
+    .eq('email', email)
+    .single();
+  
+  if (error || !data) return undefined;
+  
+  return {
+    id: data.id,
+    name: data.name || 'User',
+    email: data.email || '',
+    phone: data.phone || '',
+    role: data.role || 'customer',
+    uniqueCode: data.unique_code,
+    createdAt: data.created_at,
+  };
 };
 
 export const getUserByUniqueCode = async (uniqueCode: string): Promise<User | undefined> => {
-  const users = getUsers();
-  return users.find(u => u.uniqueCode === uniqueCode);
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('*')
+    .eq('unique_code', uniqueCode)
+    .single();
+  
+  if (error || !data) return undefined;
+  
+  return {
+    id: data.id,
+    name: data.name || 'User',
+    email: data.email || '',
+    phone: data.phone || '',
+    role: data.role || 'customer',
+    uniqueCode: data.unique_code,
+    createdAt: data.created_at,
+  };
 };
 
 // Stamp card operations (Supabase)
