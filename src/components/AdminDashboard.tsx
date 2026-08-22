@@ -4,6 +4,7 @@ import { getUserByUniqueCode, getUserStampCards, saveStampCard, addStamp, getUse
 import { useAuth } from '../contexts/AuthContext';
 import type { User, StampCard as StampCardType } from '../types';
 import { Shield, Search, Coffee, Plus, QrCode, Users, LogOut } from 'lucide-react';
+import QRScanner from './QRScanner';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ export default function AdminDashboard() {
   const [error, setError] = useState('');
   const [showAllCustomers, setShowAllCustomers] = useState(false);
   const [allCustomers, setAllCustomers] = useState<User[]>([]);
+  const [showQRScanner, setShowQRScanner] = useState(false);
 
   const handleSearch = async () => {
     setError('');
@@ -23,6 +25,24 @@ export default function AdminDashboard() {
     }
 
     const user = await getUserByUniqueCode(searchCode.trim());
+    
+    if (user) {
+      setSelectedUser(user);
+      const cards = await getUserStampCards(user.id);
+      setUserCards(cards);
+    } else {
+      setError('Customer not found. Make sure the customer has registered and has a valid unique code.');
+      setSelectedUser(null);
+      setUserCards([]);
+    }
+  };
+
+  const handleQRScan = async (result: string) => {
+    setShowQRScanner(false);
+    setSearchCode(result);
+    setError('');
+    
+    const user = await getUserByUniqueCode(result.trim());
     
     if (user) {
       setSelectedUser(user);
@@ -118,6 +138,13 @@ export default function AdminDashboard() {
             >
               <Search className="w-4 h-4 sm:w-5 sm:h-5" />
               <span className="hidden sm:inline">Search</span>
+            </button>
+            <button
+              onClick={() => setShowQRScanner(true)}
+              className="px-4 sm:px-6 py-3 bg-gradient-to-r from-amber-700 to-amber-800 text-white rounded-xl hover:from-amber-600 hover:to-amber-700 transition-all font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
+            >
+              <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">Scan QR</span>
             </button>
             <button
               onClick={handleViewAllCustomers}
@@ -298,6 +325,14 @@ export default function AdminDashboard() {
           </div>
         )}
       </main>
+
+      {/* QR Scanner Modal */}
+      {showQRScanner && (
+        <QRScanner
+          onScan={handleQRScan}
+          onClose={() => setShowQRScanner(false)}
+        />
+      )}
     </div>
   );
 }
