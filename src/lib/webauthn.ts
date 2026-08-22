@@ -88,9 +88,7 @@ export async function registerBiometricCredential(
 }
 
 // Authenticate with existing biometric credential
-export async function authenticateWithBiometric(
-  credentialId: string
-): Promise<boolean> {
+export async function authenticateWithBiometric(): Promise<string> {
   if (!isWebAuthnSupported()) {
     throw new Error('WebAuthn is not supported on this device');
   }
@@ -98,12 +96,6 @@ export async function authenticateWithBiometric(
   const credentialRequestOptions: CredentialRequestOptions = {
     publicKey: {
       challenge: new Uint8Array(32),
-      allowCredentials: [
-        {
-          type: 'public-key',
-          id: base64ToArrayBuffer(credentialId),
-        },
-      ],
       userVerification: 'preferred',
       timeout: 60000,
     },
@@ -116,7 +108,10 @@ export async function authenticateWithBiometric(
       throw new Error('Authentication failed');
     }
 
-    return true;
+    const publicKeyCredential = credential as PublicKeyCredential;
+    const credentialId = arrayBufferToBase64(publicKeyCredential.rawId);
+    
+    return credentialId;
   } catch (error) {
     console.error('Biometric authentication error:', error);
     throw error;

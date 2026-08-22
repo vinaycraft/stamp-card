@@ -15,41 +15,32 @@ export default function LoginForm() {
     password: '',
   });
   const [error, setError] = useState('');
-  const [biometricEmail, setBiometricEmail] = useState('');
   const [isBiometricAuthenticating, setIsBiometricAuthenticating] = useState(false);
 
   const handleBiometricLogin = async () => {
-    if (!biometricEmail.trim()) {
-      setError('Please enter your email for biometric login');
-      return;
-    }
-
     setIsBiometricAuthenticating(true);
     setError('');
 
     try {
-      // First get user by email to check if they have biometric credentials
-      const { getUserByEmail } = await import('../lib/storage');
-      const user = await getUserByEmail(biometricEmail.trim());
+      // Authenticate with biometric (no email required)
+      const { authenticateWithBiometric } = await import('../lib/webauthn');
+      const credentialId = await authenticateWithBiometric();
       
-      if (!user || !user.biometricCredentialId) {
-        setError('No biometric credentials found for this email. Please use password login or enable biometric login first.');
-        setIsBiometricAuthenticating(false);
+      // Look up user by credential ID
+      const { getUserByBiometricCredential } = await import('../lib/storage');
+      const user = await getUserByBiometricCredential(credentialId);
+      
+      if (!user) {
+        setError('No account found for this biometric credential. Please enable biometric login first.');
         return;
       }
 
-      // Authenticate with biometric
-      const { authenticateWithBiometric } = await import('../lib/webauthn');
-      const success = await authenticateWithBiometric(user.biometricCredentialId);
-      
-      if (success) {
-        // Log the user in
-        const loginSuccess = await login(user.email, user.phone);
-        if (loginSuccess) {
-          navigate('/dashboard');
-        } else {
-          setError('Biometric authentication succeeded but login failed');
-        }
+      // Log the user in
+      const loginSuccess = await login(user.email, user.phone);
+      if (loginSuccess) {
+        navigate('/dashboard');
+      } else {
+        setError('Biometric authentication succeeded but login failed');
       }
     } catch (err) {
       console.error('Biometric login error:', err);
@@ -166,33 +157,24 @@ export default function LoginForm() {
           )}
 
           {isLogin && isWebAuthnSupported() && (
-            <>
-              <input
-                type="email"
-                value={biometricEmail}
-                onChange={(e) => setBiometricEmail(e.target.value)}
-                className="w-full px-0 py-2 sm:py-3 border-0 border-b border-amber-200 focus:border-amber-800 focus:ring-0 bg-transparent text-amber-900 placeholder-amber-400 transition-colors text-base"
-                placeholder="Email for biometric login"
-              />
-              <button
-                type="button"
-                onClick={handleBiometricLogin}
-                disabled={isBiometricAuthenticating}
-                className="w-full bg-gradient-to-r from-amber-700 to-amber-800 text-white py-3 sm:py-3.5 rounded-xl hover:from-amber-600 hover:to-amber-700 transition-all text-sm sm:text-base font-semibold shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isBiometricAuthenticating ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border_WHITE border-t-transparent rounded-full animate-spin" />
-                    Authenticating...
-                  </>
-                ) : (
-                  <>
-                    <Fingerprint className="w-5 h-5" />
-                    Biometric Login
-                  </>
-                )}
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={handleBiometricLogin}
+              disabled={isBiometricAuthenticating}
+              className="w-full bg-gradient-to-r from-amber-700 to-amber-800 text-white py-3 sm:py-3.5 rounded-xl hover:from-amber-600 hover:to-amber-700 transition-all text-sm sm:text-base font-semibold shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isBiometricAuthenticating ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Authenticating...
+                </>
+              ) : (
+                <>
+                  <Fingerprint className="w-5 h-5" />
+                  Biometric Login
+                </>
+              )}
+            </button>
           )}
         </form>
 

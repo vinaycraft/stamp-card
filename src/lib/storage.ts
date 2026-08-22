@@ -57,6 +57,27 @@ export const updateUserBiometricCredential = async (userId: string, credentialId
   }
 };
 
+export const getUserByBiometricCredential = async (credentialId: string): Promise<User | undefined> => {
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('*')
+    .eq('biometric_credential_id', credentialId)
+    .maybeSingle();
+  
+  if (error || !data) return undefined;
+  
+  return {
+    id: data.id,
+    name: data.name || 'User',
+    email: data.email || '',
+    phone: data.phone || '',
+    role: data.role || 'customer',
+    uniqueCode: data.unique_code,
+    createdAt: data.created_at,
+    biometricCredentialId: data.biometric_credential_id,
+  };
+};
+
 export const getUserByEmail = async (email: string): Promise<User | undefined> => {
   const { data, error } = await supabase
     .from('user_profiles')
