@@ -38,20 +38,27 @@ export default function AdminDashboard() {
   };
 
   const handleQRScan = async (result: string) => {
+    console.log('QR scanned:', result);
     setShowQRScanner(false);
     setSearchCode(result);
     setError('');
     
-    const user = await getUserByUniqueCode(result.trim());
-    
-    if (user) {
-      setSelectedUser(user);
-      const cards = await getUserStampCards(user.id);
-      setUserCards(cards);
-    } else {
-      setError('Customer not found. Make sure the customer has registered and has a valid unique code.');
-      setSelectedUser(null);
-      setUserCards([]);
+    try {
+      const user = await getUserByUniqueCode(result.trim());
+      console.log('Found user:', user);
+      
+      if (user) {
+        setSelectedUser(user);
+        const cards = await getUserStampCards(user.id);
+        setUserCards(cards);
+      } else {
+        setError('Customer not found. Make sure the customer has registered and has a valid unique code.');
+        setSelectedUser(null);
+        setUserCards([]);
+      }
+    } catch (err) {
+      console.error('Error processing QR scan:', err);
+      setError('Error processing QR code. Please try again.');
     }
   };
 

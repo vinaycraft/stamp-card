@@ -26,8 +26,9 @@ export default function QRScanner({ onScan, onClose }: QRScannerProps) {
       { facingMode: 'environment' },
       config,
       (decodedText) => {
+        console.log('QR Code detected:', decodedText);
         onScan(decodedText);
-        scanner.stop();
+        scanner.stop().catch(console.error);
       },
       () => {
         // Ignore scan errors, they're normal during scanning
