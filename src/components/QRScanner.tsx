@@ -10,11 +10,13 @@ interface QRScannerProps {
 export default function QRScanner({ onScan, onClose }: QRScannerProps) {
   const [error, setError] = useState<string | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const isScanningRef = useRef(false);
   const scannerElementId = 'qr-scanner-element';
 
   useEffect(() => {
     const scanner = new Html5Qrcode(scannerElementId);
     scannerRef.current = scanner;
+    isScanningRef.current = true;
 
     const config = {
       fps: 10,
@@ -27,8 +29,9 @@ export default function QRScanner({ onScan, onClose }: QRScannerProps) {
       config,
       (decodedText) => {
         console.log('QR Code detected:', decodedText);
+        isScanningRef.current = false;
         onScan(decodedText);
-        scanner.stop().catch(console.error);
+        // Don't stop here, let the parent handle cleanup
       },
       () => {
         // Ignore scan errors, they're normal during scanning
@@ -36,12 +39,14 @@ export default function QRScanner({ onScan, onClose }: QRScannerProps) {
     ).catch((err) => {
       console.error('Scanner error:', err);
       setError('Camera access denied or not available');
+      isScanningRef.current = false;
     });
 
     return () => {
-      if (scannerRef.current) {
+      if (scannerRef.current && isScanningRef.current) {
         scannerRef.current.stop().catch(console.error);
       }
+      isScanningRef.current = false;
     };
   }, [onScan]);
 
