@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { getUserByUniqueCode, getUserStampCards, saveStampCard, addStamp, getUsers } from '../lib/storage';
 import { useAuth } from '../contexts/AuthContext';
 import type { User, StampCard as StampCardType } from '../types';
-import { Shield, Search, Coffee, Plus, QrCode, Users, LogOut } from 'lucide-react';
+import { Shield, Search, Coffee, Plus, QrCode, Users, LogOut, Fingerprint } from 'lucide-react';
 import QRScanner from './QRScanner';
+import BiometricRegistration from './BiometricRegistration';
+import { isWebAuthnSupported } from '../lib/webauthn';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const [searchCode, setSearchCode] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userCards, setUserCards] = useState<StampCardType[]>([]);
@@ -16,6 +18,7 @@ export default function AdminDashboard() {
   const [showAllCustomers, setShowAllCustomers] = useState(false);
   const [allCustomers, setAllCustomers] = useState<User[]>([]);
   const [showQRScanner, setShowQRScanner] = useState(false);
+  const [showBiometricRegistration, setShowBiometricRegistration] = useState(false);
 
   const handleSearch = async () => {
     setError('');
@@ -111,13 +114,24 @@ export default function AdminDashboard() {
                 <p className="text-xs sm:text-sm text-amber-200">Manage Customer Stamp Cards</p>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-amber-50 bg-amber-800/50 hover:bg-amber-800 rounded-lg transition-colors flex items-center gap-2"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Sign Out</span>
-            </button>
+            <div className="flex items-center gap-2 sm:gap-3">
+              {isWebAuthnSupported() && !user?.biometricCredentialId && (
+                <button
+                  onClick={() => setShowBiometricRegistration(true)}
+                  className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-amber-50 bg-amber-700/50 hover:bg-amber-700 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <Fingerprint className="w-4 h-4" />
+                  <span className="hidden sm:inline">Enable Biometric</span>
+                </button>
+              )}
+              <button
+                onClick={handleLogout}
+                className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-amber-50 bg-amber-800/50 hover:bg-amber-800 rounded-lg transition-colors flex items-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -338,6 +352,18 @@ export default function AdminDashboard() {
         <QRScanner
           onScan={handleQRScan}
           onClose={() => setShowQRScanner(false)}
+        />
+      )}
+
+      {/* Biometric Registration Modal */}
+      {showBiometricRegistration && user && (
+        <BiometricRegistration
+          userId={user.id}
+          userEmail={user.email}
+          onSuccess={() => {
+            setShowBiometricRegistration(false);
+          }}
+          onClose={() => setShowBiometricRegistration(false)}
         />
       )}
     </div>
